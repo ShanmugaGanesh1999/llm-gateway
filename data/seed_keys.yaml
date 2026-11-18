@@ -1,0 +1,25 @@
+# Demo virtual keys (CONVENTIONS section 5). Seeded on startup, stored only as SHA-256 hashes.
+- key: sk-demo-team-a
+  key_alias: demo-team-a
+  team: team-a
+  models: [smart, backup]
+  max_budget: 5.0
+  budget_duration: 30d
+  rpm_limit: 20
+  tpm_limit: 12000
+- key: sk-demo-team-b
+  key_alias: demo-team-b
+  team: team-b
+  models: [backup]
+  max_budget: 0.0005          # tiny on purpose: one long request exhausts it
+  budget_duration: 30d
+  rpm_limit: 5
+  tpm_limit: 4000
+- key: sk-demo-rag-service     # service key for Project 1 in the combined stack (live evals)
+  key_alias: demo-rag-service
+  team: rag-service
+  models: [smart, backup]
+  max_budget: 5.0
+  budget_duration: 30d
+  rpm_limit: 300
+  tpm_limit: 200000

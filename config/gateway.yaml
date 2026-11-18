@@ -1,0 +1,49 @@
+# Gateway config, loaded by app/config.py at startup.
+# Shape deliberately mirrors LiteLLM Proxy (model_list / router_settings / litellm_settings /
+# general_settings) so it maps 1:1 to config/litellm_config.reference.yaml.
+# Values "os.environ/NAME" are resolved from the environment, as LiteLLM does.
+
+model_list:
+  - model_name: smart                       # logical model group the app asks for
+    litellm_params:
+      model: openai/mock-gpt-4o-mini        # "<provider>/<model id sent upstream>"
+      api_base: os.environ/PROVIDER_A_URL
+      api_key: os.environ/PROVIDER_A_KEY
+      timeout: 2                            # seconds; a timeout counts as transient
+      weight: 1
+    model_info:
+      id: provider-a/mock-gpt-4o-mini       # deployment id (headers, spend rows, cooldown keys)
+      input_cost_per_token: 0.00000015      # $0.15 / 1M input tokens
+      output_cost_per_token: 0.0000006      # $0.60 / 1M output tokens
+
+  - model_name: backup
+    litellm_params:
+      model: openai/mock-claude-haiku
+      api_base: os.environ/PROVIDER_B_URL
+      api_key: os.environ/PROVIDER_B_KEY
+      timeout: 2
+      weight: 1
+    model_info:
+      id: provider-b/mock-claude-haiku
+      input_cost_per_token: 0.0000008       # $0.80 / 1M
+      output_cost_per_token: 0.000004       # $4.00 / 1M
+
+router_settings:
+  routing_strategy: simple-shuffle          # or least-busy (Redis in-flight counters)
+  num_retries: 1                            # extra attempts per group, transient errors only
+  retry_backoff_seconds: 0.1                # jittered, multiplied by attempt number
+  allowed_fails: 1                          # failures within 60s before cooldown
+  cooldown_time: 15                         # seconds a failing deployment is skipped
+  fallbacks:
+    - smart: [backup]                       # one hop, never transitive
+
+litellm_settings:
+  cache: true
+  cache_params:
+    type: redis
+    ttl: 300
+
+general_settings:
+  master_key: os.environ/GATEWAY_MASTER_KEY
+  policy_version: "2026-11-v1"              # bump to invalidate every cached response
+  auth_cache_ttl: 30                        # seconds a key lookup is cached in-process
